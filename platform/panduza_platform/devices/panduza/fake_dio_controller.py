@@ -11,10 +11,10 @@ class DevicePanduzaFakeDioController(PlatformDevice):
             "manufacturer": "Panduza"
         }
 
-    def _PZA_DEV_interfaces(self):
+    def _PZA_DEV_interfaces_generator(self):
         """
         """
-        number_of_dio = int( self._initial_settings.get("number_of_dio", 1) )
+        number_of_dio = int( self.get_settings().get("number_of_dio", 1) )
         interfaces = []
         for id in range(0, number_of_dio):
             interfaces.append(

@@ -33,7 +33,9 @@ class PlatformDeviceFactory:
 
         # Produce the device
         try:
-            return self.__device_templates[ref](config.get("settings", {}))
+            producted_device = self.__device_templates[ref](config.get("settings", {}))
+            producted_device.initialize()
+            return producted_device
         except Exception as e:
             raise InitializationError(f"{traceback.format_exc()}")
 

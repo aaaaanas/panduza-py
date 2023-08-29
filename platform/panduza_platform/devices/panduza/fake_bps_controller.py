@@ -10,11 +10,11 @@ class DevicePanduzaFakeBps(PlatformDevice):
             "manufacturer": "Panduza"
         }
 
-    def _PZA_DEV_interfaces(self):
+    def _PZA_DEV_interfaces_generator(self):
         """
         """
 
-        number_of_channel = int( self._initial_settings.get("number_of_channel", 1) )
+        number_of_channel = int( self.get_settings().get("number_of_channel", 1) )
 
         interfaces = []
         for chan in range(0, number_of_channel):

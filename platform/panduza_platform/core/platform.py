@@ -247,10 +247,10 @@ class Platform:
 
     # --
 
-    def load_interface(self, bench_name, device_name, interface_config):
+    def load_interface(self, bench_name, device, interface_config):
         """Load a new interface
         """
-        instance = self.driver_factory.produce_interface(bench_name, device_name, interface_config)
+        instance = self.driver_factory.produce_interface(bench_name, device, interface_config)
         self.interfaces.append(instance)
 
     # --
@@ -316,7 +316,11 @@ class Platform:
             self.__load_devices()
             
             
-            self.load_interface("server", "platforms", {
+            device_machine = self.device_factory.produce_device({   
+                "ref": "Panduza.Machine",
+            })
+
+            self.load_interface("server", device_machine, {
                     "name": "py",
                     "driver": "py.platform"
                 })
@@ -519,13 +523,10 @@ class Platform:
         #    "model": "Panduza.FakeBps"
         # }
         for device_cfg in self.tree["devices"]:
-
-            # device == class type for device
+            # Produce the device
             device = self.device_factory.produce_device(device_cfg)
 
-            interfaces = device._PZA_DEV_interfaces()
-            self.log.info(f"{device.get_name()} => {interfaces}")
-            for interface_config in interfaces:
-                self.load_interface("default", device.get_name(), interface_config)
-
+            self.log.debug(f"{device.get_name()} => {device.get_interface_defs()}")
+            for interface_config in device.get_interface_defs():
+                self.load_interface("default", device, interface_config)
 

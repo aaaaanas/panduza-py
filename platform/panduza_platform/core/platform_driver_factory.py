@@ -18,7 +18,7 @@ class PlatformDriverFactory:
 
     # ---
 
-    def produce_interface(self, bench_name, device_name, interface_config):
+    def produce_interface(self, bench_name, device, interface_config):
         """
         """
         try:
@@ -27,14 +27,14 @@ class PlatformDriverFactory:
 
             # Control the driver exists in the database
             if not driver_name in self.__drivers:
-                raise InitializationError(f"\"{driver_name}\" is not found in this platform (required by \"{bench_name}/{device_name}\")")
+                raise InitializationError(f"\"{driver_name}\" is not found in this platform (required by \"{bench_name}/{device}\")")
 
             driver_obj = self.__drivers[driver_name] 
 
             instance = driver_obj()
             instance.set_platform(self.__platform)
             instance.set_bench_name(bench_name)
-            instance.set_device_name(device_name)
+            instance.set_device_name(device.get_name())
             instance.set_tree(interface_config)
 
             self.__log.info(f"> {name} [{driver_name}]")

@@ -17,12 +17,12 @@ class DeviceHanmatekHm310t(PlatformDevice):
             "manufacturer": "Hanmatek"
         }
 
-    def _PZA_DEV_interfaces(self):
+    def _PZA_DEV_interfaces_generator(self):
         """
         """
         interfaces = []
 
-        fake_mode = self._initial_settings.get("fake_mode", False)
+        fake_mode = self.get_settings().get("fake_mode", False)
 
 
         if fake_mode:

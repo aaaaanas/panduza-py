@@ -23,16 +23,16 @@ class DeviceFtdiFt232h_jtag(PlatformDevice):
             "manufacturer": "Ftdi"
         }
 
-    def _PZA_DEV_interfaces(self):
+    def _PZA_DEV_interfaces_generator(self):
         """
         """
         interfaces = []
         
-        jtag_frequency = self._initial_settings.get("jtag_frequency",6E6)
-        jtag_bsdl_folder = self._initial_settings.get("jtag_bsdl_folder", "/etc/BSDL")
+        jtag_frequency = self.get_settings().get("jtag_frequency",6E6)
+        jtag_bsdl_folder = self.get_settings().get("jtag_bsdl_folder", "/etc/BSDL")
 
         pins_detected = self.get_pins_from_idcode(jtag_bsdl_folder) # a list of pins from each device detected
-        pins_wanted  = self._initial_settings.get("pins_wanted",None)
+        pins_wanted  = self.get_settings().get("pins_wanted",None)
         number_of_devices = len(pins_detected)
 
         # print(pins_wanted)

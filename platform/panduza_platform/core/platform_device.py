@@ -2,27 +2,42 @@ import abc
 from .platform_errors import InitializationError
 
 class PlatformDevice:
-    """This class is a static and generic device builder
-    It does not hold any attributes or members
+    """Represent a device
+
+    It can be instanciated with empty settings to provide only the _PZA_DEV_config
     """
 
     def __init__(self, settings = {}) -> None:
         """Constructor
         """
         # Settings json provided by the user with the tree.json
-        self._initial_settings = settings
+        self.__settings = settings
 
     # ---
 
     def initialize(self):
-        pass
+        """Post initialization when the device is actually used
+        """
+        self.__interface_defs = self._PZA_DEV_interfaces_generator()
+
+    # ---
+
+    def get_settings(self):
+        """Return settings provided by the user for this device
+        """
+        return self.__settings
+
+    # ---
+
+    def get_interface_defs(self):
+        return self.__interface_defs
 
     # ---
 
     def get_config_field(self, field):
         config = self._PZA_DEV_config()
         if not field in config:
-            raise InitializationError(f"\"{field}\" field is not provided in the device builder config {config}")
+            raise InitializationError(f"\"{field}\" field is not provided in the device config {config}")
         return config.get(field)
 
     # ---
@@ -56,7 +71,13 @@ class PlatformDevice:
     def get_manufacturer(self):
         return self.get_config_field("manufacturer")
 
-    # ---
+    ###########################################################################
+    ###########################################################################
+    #
+    # TO OVERRIDE IN SUBCLASS
+    #
+    ###########################################################################
+    ###########################################################################
 
     @abc.abstractmethod
     def _PZA_DEV_config(self):
@@ -67,8 +88,8 @@ class PlatformDevice:
     # ---
 
     @abc.abstractmethod
-    def _PZA_DEV_interfaces(self):
-        """
+    def _PZA_DEV_interfaces_generator(self):
+        """Generate interface definitions from device settings
         """
         return {}
 
