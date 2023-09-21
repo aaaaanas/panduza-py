@@ -115,7 +115,6 @@ class ConnectorUartFtdiSerial(ConnectorUartFtdiBase):
                 data = await asyncio.wait_for(self.reader.readuntil(b'\n'), timeout=2.0) 
                 decoded_data = data.decode('utf-8').strip()
             
-                print("iiiiiiiiiii")
                 return decoded_data
             
             except asyncio.TimeoutError as e: 
@@ -132,7 +131,7 @@ class ConnectorUartFtdiSerial(ConnectorUartFtdiBase):
         async with self._mutex:
             _, self.writer = await serial_asyncio.open_serial_connection(loop = self.loop,url=self.port_name, baudrate=self.baudrate)
             await asyncio.sleep(1)
-            print("aaaaaaaaaaaa")
+            
             self.writer.write(message.encode())
             await self.writer.drain()
             self.writer.close() 
