@@ -34,14 +34,14 @@ class MetaDriverServomotor(PlatformDriver):
         }
 
         # 
-        self.__polling_cycle = 1
+        self.__polling_cycle = 0.1
 
         # first update
         await self.__update_attribute_initial()
 
         # Start polling task
         self.__task_polling = loop.create_task(self.__polling_task())
-
+    
         # Init Success
         await super()._PZA_DRV_loop_init(loop, tree)
 
@@ -94,11 +94,12 @@ class MetaDriverServomotor(PlatformDriver):
         """
         while self.alive:
             await asyncio.sleep(self.__polling_cycle)
-            await self._update_attributes_from_dict({
-                "position": {
-                    "value": await self._PZA_DRV_SERVOMOTOR_get_position_value()
-                }
-            })
+            await self._update_attribute("position", "value", await self._PZA_DRV_SERVOMOTOR_get_position_value(), 'always')
+            # await self._update_attributes_from_dict({
+            #     "position": {
+            #         "value": await self._PZA_DRV_SERVOMOTOR_get_position_value()
+            #     }
+            # })
 
     # ---
 
@@ -115,14 +116,14 @@ class MetaDriverServomotor(PlatformDriver):
         update_obj = {}
         await self._prepare_update(update_obj, 
                             "position", cmd_att,
-                            "value" , [int],
+                            "value", [int],
                             self._PZA_DRV_SERVOMOTOR_set_position_value,
                             self._PZA_DRV_SERVOMOTOR_get_position_value)
-        # await self._prepare_update(update_obj, 
-        #                     "position", cmd_att,
-        #                     "polling_cycle", [float, int], 
-        #                     self.__set_poll_cycle, 
-        #                     self.__get_poll_cycle)
+        await self._prepare_update(update_obj, 
+                            "position", cmd_att,
+                            "polling_cycle", [float, int], 
+                            self.__set_poll_cycle, 
+                            self.__get_poll_cycle)
         await self._update_attributes_from_dict(update_obj)
 
     # ---

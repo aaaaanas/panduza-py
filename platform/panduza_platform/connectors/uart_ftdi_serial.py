@@ -23,7 +23,7 @@ class ConnectorUartFtdiSerial(ConnectorUartFtdiBase):
     ###########################################################################
 
     @staticmethod
-    async def Get(loop,**kwargs):
+    async def Get(**kwargs):
         """Singleton main getter
 
         
@@ -56,7 +56,7 @@ class ConnectorUartFtdiSerial(ConnectorUartFtdiBase):
             if not (serial_port_name in ConnectorUartFtdiSerial.__INSTANCES):
                 ConnectorUartFtdiSerial.__INSTANCES[serial_port_name] = None
                 try:
-                    new_instance = ConnectorUartFtdiSerial(loop,**kwargs)
+                    new_instance = ConnectorUartFtdiSerial(**kwargs)
                     await new_instance.connect()
                     
                     ConnectorUartFtdiSerial.__INSTANCES[serial_port_name] = new_instance
@@ -71,7 +71,7 @@ class ConnectorUartFtdiSerial(ConnectorUartFtdiBase):
     ###########################################################################
     ###########################################################################
 
-    def __init__(self, loop,**kwargs):
+    def __init__(self,**kwargs):
         """Constructor
         """
         # Init local mutex
@@ -79,19 +79,19 @@ class ConnectorUartFtdiSerial(ConnectorUartFtdiBase):
         
         key = kwargs["serial_port_name"]
         
-        self.loop = loop
+        self.loop = asyncio.get_event_loop()
         
+
         if not (key in ConnectorUartFtdiSerial.__INSTANCES):
             raise Exception("You need to pass through Get method to create an instance")
         else:
             self.log = logging.getLogger(key)
             self.log.info(f"attached to the UART Serial Connector")
-
             
             # Configuration for UART communication
 
             self.port_name = kwargs.get("serial_port_name", "/dev/ttyUSB0")
-            self.baudrate = kwargs.get("serial_baudrate", 9600)
+            self.baudrate = kwargs.get("serial_baudrate", 115200)
 
 
     # ---
@@ -99,10 +99,8 @@ class ConnectorUartFtdiSerial(ConnectorUartFtdiBase):
     async def connect(self):
         """Start the serial connection
         """
-
-        self.reader,_ = await serial_asyncio.open_serial_connection(loop = self.loop,url=self.port_name, baudrate=self.baudrate)
         
-
+        self.reader,_ = await serial_asyncio.open_serial_connection(loop = self.loop,url=self.port_name, baudrate=self.baudrate)
 
     ###########################################################################
     ###########################################################################
@@ -110,12 +108,14 @@ class ConnectorUartFtdiSerial(ConnectorUartFtdiBase):
 
     async def read_uart(self):
         async with self._mutex:
-            #await asyncio.sleep(1)
             try:
                 
-                #data = await self.reader.readuntil(b'\n')
-                data = await asyncio.wait_for(self.reader.readline(), timeout=2.0) 
-                decoded_data = data.decode('utf-8').strip()  
+                #data = await self.reader.readline()
+                await asyncio.sleep(1)
+                data = await asyncio.wait_for(self.reader.readuntil(b'\n'), timeout=2.0) 
+                decoded_data = data.decode('utf-8').strip()
+            
+                print("iiiiiiiiiii")
                 return decoded_data
             
             except asyncio.TimeoutError as e: 
@@ -126,13 +126,15 @@ class ConnectorUartFtdiSerial(ConnectorUartFtdiBase):
     ###########################################################################
     ###########################################################################
 
+    ######## tester asyncio.wait_for(write message) ou tester si on recoit le meme message plusieurs fois -> ne pas prendre en compte
+
     async def write_uart(self,message):
         async with self._mutex:
             _, self.writer = await serial_asyncio.open_serial_connection(loop = self.loop,url=self.port_name, baudrate=self.baudrate)
             await asyncio.sleep(1)
-            print("aaaa")
+            print("aaaaaaaaaaaa")
             self.writer.write(message.encode())
-            await self.writer.drain() 
+            await self.writer.drain()
             self.writer.close() 
 
 

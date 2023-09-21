@@ -22,6 +22,7 @@ class DeviceDynamixel(PlatformDevice):
         interfaces = []
 
         serial_port_name = self._initial_settings.get("serial_port_name",TTY_BASE)
+        serial_baudrate = self._initial_settings.get("serial_baudrate",115200)
         number_of_servo = self._initial_settings.get("number_of_servo",TTY_BASE)
         
         for servo_id in range (0,number_of_servo):
@@ -30,8 +31,9 @@ class DeviceDynamixel(PlatformDevice):
             "driver": "panduza.servomotor",
             "settings": {
                 "serial_port_name": serial_port_name,
-                "serial_baudrate": 9600,
-                "number_of_servo" : number_of_servo
+                "serial_baudrate": serial_baudrate,
+                "number_of_servo" : number_of_servo,
+                "servo_id" : servo_id
             }
         })
 

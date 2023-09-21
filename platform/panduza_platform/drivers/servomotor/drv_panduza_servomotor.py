@@ -27,21 +27,25 @@ class DriverServomotor(MetaDriverServomotor):
         Reset fake parameters
         """
 
+        # Init local mutex
+        self._mutex = asyncio.Lock()
+
         settings = tree.get("settings", {})
         # self.log.info(settings)
 
-         # Checks
+        # Checks
         assert_that(settings, has_key("serial_port_name"))
         assert_that(settings, has_key("serial_baudrate"))
         assert_that(settings, has_key("number_of_servo"))
-        
+        assert_that(settings, has_key("servo_id"))
 
         self.number_of_servo = settings["number_of_servo"]
+        self.servo_id  = settings["servo_id"]
         
         #self.__task_increment = loop.create_task(self.__increment_task())
 
         # Get the gate connector
-        self.uart_connector = await ConnectorUartFtdiSerial.Get(loop,**settings)
+        self.uart_connector = await ConnectorUartFtdiSerial.Get(**settings)
 
 
         self.__fakes = {
@@ -56,40 +60,27 @@ class DriverServomotor(MetaDriverServomotor):
     # ---
 
     async def _PZA_DRV_SERVOMOTOR_get_position_value(self):
-        
-        await self.uart_connector.write_uart(f"get")
-        
-        self.__fakes["position"]["value"] = await self.uart_connector.read_uart()
-        print(self.__fakes["position"]["value"])
-        
-        return self.__fakes["position"]["value"]
-    
-        # tab = []
 
-        #first_response = await self.uart_connector.read_uart()
+        async with self._mutex:
+        
+            await self.uart_connector.write_uart(f"get")
+            response = await self.uart_connector.read_uart()
+            self.__fakes["position"]["value"] = int(response)
 
-        # if first_response == "start": 
-        #     for i in range(self.number_of_servo):
-        #         response = await self.uart_connector.read_uart()
-        #         self.__fakes["position"]["value"] = response
-        #         print(response)
+            return self.__fakes["position"]["value"]
                 
-        #     #self.__fakes["position"]["value"] = tab[i]
-        #     #print (tab)
-        
-        #     return self.__fakes["position"]["value"]
+    
+    
+    async def _PZA_DRV_SERVOMOTOR_set_position_value(self,value):
+        async with self._mutex:
 
-    
-
+            print(f"command set {self.servo_id} {value}")
+            await self.uart_connector.write_uart(f"set {self.servo_id} {value}")
+            
+            self.__fakes["position"]["value"] = value
+            
         
-    
-    
-    
-    async def _PZA_DRV_SERVOMOTOR_set_position_value(self,id,value):
-        await self.uart_connector.write_uart(f"set {id} {value}")
-        self.__fakes["position"]["value"] = value
-    
-        return self.__fakes["position"]["value"]
+            
 
     # ---
 
