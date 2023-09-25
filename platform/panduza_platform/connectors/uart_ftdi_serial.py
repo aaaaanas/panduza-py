@@ -101,17 +101,19 @@ class ConnectorUartFtdiSerial(ConnectorUartFtdiBase):
         """
         
         self.reader,_ = await serial_asyncio.open_serial_connection(loop = self.loop,url=self.port_name, baudrate=self.baudrate)
+        await asyncio.sleep(4)
+    
+
 
     ###########################################################################
     ###########################################################################
 
 
     async def read_uart(self):
-        async with self._mutex:
+       # async with self._mutex:
             try:
                 
-                #data = await self.reader.readline()
-                await asyncio.sleep(1)
+                #await asyncio.sleep(1)
                 data = await asyncio.wait_for(self.reader.readuntil(b'\n'), timeout=2.0) 
                 decoded_data = data.decode('utf-8').strip()
             
@@ -125,19 +127,26 @@ class ConnectorUartFtdiSerial(ConnectorUartFtdiBase):
     ###########################################################################
     ###########################################################################
 
-    ######## tester asyncio.wait_for(write message) ou tester si on recoit le meme message plusieurs fois -> ne pas prendre en compte
 
     async def write_uart(self,message):
-        async with self._mutex:
+        #async with self._mutex:
             _, self.writer = await serial_asyncio.open_serial_connection(loop = self.loop,url=self.port_name, baudrate=self.baudrate)
-            await asyncio.sleep(1)
-            
+            #await asyncio.sleep(0.3)
             self.writer.write(message.encode())
             await self.writer.drain()
             self.writer.close() 
 
 
+    ###########################################################################
+    ###########################################################################
 
+    async def write_read_uart(self,message):
+        async with self._mutex:
+
+            await self.write_uart(message)
+            data = await self.read_uart()
+
+            return data
 
 
 

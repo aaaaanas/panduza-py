@@ -27,9 +27,6 @@ class DriverServomotor(MetaDriverServomotor):
         Reset fake parameters
         """
 
-        # Init local mutex
-        self._mutex = asyncio.Lock()
-
         settings = tree.get("settings", {})
         # self.log.info(settings)
 
@@ -60,24 +57,20 @@ class DriverServomotor(MetaDriverServomotor):
     # ---
 
     async def _PZA_DRV_SERVOMOTOR_get_position_value(self):
+        await asyncio.sleep(2.2)
+        response = await self.uart_connector.write_read_uart(f"get {self.servo_id}")
+        self.__fakes["position"]["value"] = int(response)
 
-        async with self._mutex:
-        
-            await self.uart_connector.write_uart(f"get")
-            response = await self.uart_connector.read_uart()
-            self.__fakes["position"]["value"] = int(response)
-
-            return self.__fakes["position"]["value"]
+        return self.__fakes["position"]["value"]
                 
     
     
     async def _PZA_DRV_SERVOMOTOR_set_position_value(self,value):
-        async with self._mutex:
-
-            print(f"command set {self.servo_id} {value}")
-            await self.uart_connector.write_uart(f"set {self.servo_id} {value}")
-            
-            self.__fakes["position"]["value"] = value
+        
+        print(f"command set {self.servo_id} {value}")
+        await self.uart_connector.write_read_uart(f"set {self.servo_id} {value}")
+        
+        self.__fakes["position"]["value"] = value
             
         
             
