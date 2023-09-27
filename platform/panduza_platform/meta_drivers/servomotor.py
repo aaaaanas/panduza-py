@@ -34,7 +34,7 @@ class MetaDriverServomotor(PlatformDriver):
         }
 
         # 
-        self.__polling_cycle = 3
+        self.__polling_cycle = 1
 
         # first update
         await self.__update_attribute_initial()
@@ -94,8 +94,10 @@ class MetaDriverServomotor(PlatformDriver):
         """
         while self.alive:
             await asyncio.sleep(self.__polling_cycle)
+            
             #await self._update_attribute("position", "value", await self._PZA_DRV_SERVOMOTOR_get_position_value(), 'always')
             await self._update_attribute("position", "value", await self._PZA_DRV_SERVOMOTOR_get_position_value(), 'on-change')
+            
             # await self._update_attributes_from_dict({
             #     "position": {
             #         "value": await self._PZA_DRV_SERVOMOTOR_get_position_value()

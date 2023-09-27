@@ -6,18 +6,18 @@ from connectors.uart_ftdi_serial import ConnectorUartFtdiSerial
 
 
 class DriverServomotor(MetaDriverServomotor):
-    """Fake Voltmeter driver
+    """Servomotor driver
     """
 
     # =============================================================================
-    # FROM MetaDriverVoltmeter
+    # FROM MetaDriverServomotor
 
     def _PZA_DRV_SERVOMOTOR_config(self):
         """
         """
         return {
             "name": "panduza.servomotor",
-            "description": "Virtual SERVOMOTOR"
+            "description": "SERVOMOTOR"
         }
 
     # ---
@@ -43,7 +43,7 @@ class DriverServomotor(MetaDriverServomotor):
 
         # Get the gate connector
         self.uart_connector = await ConnectorUartFtdiSerial.Get(**settings)
-
+        await asyncio.sleep(2.2)
 
         self.__fakes = {
             "position": {
@@ -57,9 +57,11 @@ class DriverServomotor(MetaDriverServomotor):
     # ---
 
     async def _PZA_DRV_SERVOMOTOR_get_position_value(self):
-        await asyncio.sleep(2.2)
+        
         response = await self.uart_connector.write_read_uart(f"get {self.servo_id}")
         self.__fakes["position"]["value"] = int(response)
+        
+        self.__fakes["position"]["value"] = await self.__round_value(self.__fakes["position"]["value"])
 
         return self.__fakes["position"]["value"]
                 
@@ -67,14 +69,17 @@ class DriverServomotor(MetaDriverServomotor):
     
     async def _PZA_DRV_SERVOMOTOR_set_position_value(self,value):
         
+        value = await self.__round_value(value)
         print(f"command set {self.servo_id} {value}")
         await self.uart_connector.write_read_uart(f"set {self.servo_id} {value}")
         
         self.__fakes["position"]["value"] = value
             
         
-            
-
+    async def __round_value(self,value):      
+        return ((value + 2) // 5) * 5
+    
+    
     # ---
 
     # async def __increment_task(self):
