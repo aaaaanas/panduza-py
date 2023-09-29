@@ -23,7 +23,7 @@ class DeviceDynamixel(PlatformDevice):
 
         serial_port_name = self._initial_settings.get("serial_port_name",TTY_BASE)
         serial_baudrate = self._initial_settings.get("serial_baudrate",115200)
-        number_of_servo = self._initial_settings.get("number_of_servo",TTY_BASE)
+        number_of_servo = self._initial_settings.get("number_of_servo")
         
         for servo_id in range (0,number_of_servo):
             interfaces.append({

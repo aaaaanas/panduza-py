@@ -39,8 +39,6 @@ class DriverServomotor(MetaDriverServomotor):
         self.number_of_servo = settings["number_of_servo"]
         self.servo_id  = settings["servo_id"]
         
-        #self.__task_increment = loop.create_task(self.__increment_task())
-
         # Get the gate connector
         self.uart_connector = await ConnectorUartFtdiSerial.Get(**settings)
         await asyncio.sleep(2.2)
@@ -61,7 +59,8 @@ class DriverServomotor(MetaDriverServomotor):
         response = await self.uart_connector.write_read_uart(f"get {self.servo_id}")
         self.__fakes["position"]["value"] = int(response)
         
-        self.__fakes["position"]["value"] = await self.__round_value(self.__fakes["position"]["value"])
+        #self.__fakes["position"]["value"] = await self.__round_value(self.__fakes["position"]["value"])
+        self.__fakes["position"]["value"] = await self.change_to_even_nuber(self.__fakes["position"]["value"])
 
         return self.__fakes["position"]["value"]
                 
@@ -69,7 +68,7 @@ class DriverServomotor(MetaDriverServomotor):
     
     async def _PZA_DRV_SERVOMOTOR_set_position_value(self,value):
         
-        value = await self.__round_value(value)
+        #value = await self.__round_value(value)
         print(f"command set {self.servo_id} {value}")
         await self.uart_connector.write_read_uart(f"set {self.servo_id} {value}")
         
@@ -79,10 +78,7 @@ class DriverServomotor(MetaDriverServomotor):
     async def __round_value(self,value):      
         return ((value + 2) // 5) * 5
     
-    
-    # ---
-
-    # async def __increment_task(self):
-    #     while True:
-    #         await asyncio.sleep(0.2)
-    #         self.__fakes["position"]["value"] += 0.001
+    async def change_to_even_nuber(self,number):
+        if number % 2 != 0: 
+            number += 1     
+        return number
