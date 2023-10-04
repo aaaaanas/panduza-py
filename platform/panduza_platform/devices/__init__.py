@@ -1,8 +1,10 @@
 from .hanmatek import PZA_DEVICES_LIST as HANMATEK_DEVICES
 from .panduza import PZA_DEVICES_LIST as PANDUZA_DEVICES
 from .ftdi import PZA_DEVICES_LIST as FTDI_DEVICES
+from .tenma import PZA_DEVICES_LIST as TENMA_DEVICES
 
 PZA_DEVICES_LIST = [] \
     + HANMATEK_DEVICES \
     + PANDUZA_DEVICES \
-    + FTDI_DEVICES
+    + FTDI_DEVICES \
+    + TENMA_DEVICES
