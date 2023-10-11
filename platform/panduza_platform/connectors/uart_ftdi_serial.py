@@ -76,6 +76,7 @@ class ConnectorUartFtdiSerial(ConnectorUartFtdiBase):
         """
         # Init local mutex
         self._mutex = asyncio.Lock()
+        self._mutex2 = asyncio.Lock()
         
         key = kwargs["serial_port_name"]
         
@@ -100,7 +101,9 @@ class ConnectorUartFtdiSerial(ConnectorUartFtdiBase):
         """Start the serial connection
         """
         
-        self.reader,_ = await serial_asyncio.open_serial_connection(loop = self.loop,url=self.port_name, baudrate=self.baudrate)
+        self.reader,self.writer = await serial_asyncio.open_serial_connection(loop = self.loop,url=self.port_name, baudrate=self.baudrate)
+
+        # We need to wait for the serial connection
         await asyncio.sleep(4)
     
 
@@ -108,15 +111,12 @@ class ConnectorUartFtdiSerial(ConnectorUartFtdiBase):
     ###########################################################################
     ###########################################################################
 
-
     async def read_uart(self):
-       # async with self._mutex:
+       async with self._mutex:
             try:
                 
-                #await asyncio.sleep(1)
                 data = await asyncio.wait_for(self.reader.readuntil(b'\n'), timeout=2.0) 
                 decoded_data = data.decode('utf-8').strip()
-            
                 return decoded_data
             
             except asyncio.TimeoutError as e: 
@@ -127,26 +127,27 @@ class ConnectorUartFtdiSerial(ConnectorUartFtdiBase):
     ###########################################################################
     ###########################################################################
 
-
     async def write_uart(self,message):
-        #async with self._mutex:
-            _, self.writer = await serial_asyncio.open_serial_connection(loop = self.loop,url=self.port_name, baudrate=self.baudrate)
-            #await asyncio.sleep(0.3)
-            self.writer.write(message.encode())
-            await self.writer.drain()
-            self.writer.close() 
+        async with self._mutex:
+            try:
+                
+                self.writer.write(message.encode())
+                await self.writer.drain()
+            except Exception as e:
+                raise Exception('Error during writing to uart').with_traceback(e.__traceback__)
 
 
     ###########################################################################
     ###########################################################################
 
     async def write_read_uart(self,message):
-        async with self._mutex:
-
+        async with self._mutex2:
             await self.write_uart(message)
             data = await self.read_uart()
-
             return data
+
+
+
 
 
 

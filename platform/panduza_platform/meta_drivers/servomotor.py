@@ -95,8 +95,8 @@ class MetaDriverServomotor(PlatformDriver):
         while self.alive:
             await asyncio.sleep(self.__polling_cycle)
             
-            #await self._update_attribute("position", "value", await self._PZA_DRV_SERVOMOTOR_get_position_value(), 'always')
-            await self._update_attribute("position", "value", await self._PZA_DRV_SERVOMOTOR_get_position_value(), 'on-change')
+            await self._update_attribute("position", "value", await self._PZA_DRV_SERVOMOTOR_get_position_value(), 'always')
+            #await self._update_attribute("position", "value", await self._PZA_DRV_SERVOMOTOR_get_position_value(), 'on-change')
             
             # await self._update_attributes_from_dict({
             #     "position": {
