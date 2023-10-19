@@ -1,0 +1,50 @@
+name: Basic Tests
+on: [push]
+
+jobs:
+  Tests:
+    runs-on: ubuntu-latest
+    container: ubuntu:22.04
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v3
+
+      # ---
+      - run: apt-get update
+      - run: apt-get install -y mosquitto git
+      - run: apt-get install -y python3.11 python3-pip
+
+      # ---
+      - run: python3.11 -m pip install -r ./platform/tests/auto/requirements.txt
+      - run: python3.11 -m pip install -r ./platform/requirements.txt
+      - run: python3.11 -m pip install ./client/
+
+      # ---
+      - run: mosquitto -d
+
+      # ---
+      - name: Start the platform
+        run: >
+          python3.11 ./platform/panduza_platform/__main__.py &
+          sleep 1
+
+      # - name: Export test env variables
+      #   uses: cardinalby/export-env-action@v1
+      #   with:
+      #     envFile: './platform/tests/auto/envs/fake_bench.env'
+
+      # ---
+      - name: Execute tests
+        working-directory: platform/tests/auto
+        run: robot --pythonpath benches/virtual:. tests/*
+
+      # ---
+      - uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: tests-report
+          path: platform/tests/auto
+
+      # ---
+      - run: echo "🎉 Basic Tests finished !"
+
