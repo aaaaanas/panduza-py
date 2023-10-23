@@ -1,16 +1,19 @@
-import logging
+import time
 import asyncio
-import serial
+import logging
 import serial_asyncio
 
-from .serial_base import ConnectorUartBase
+from .serial_base import SerialBase
 from log.driver import driver_logger
 
 from .udev_tty import SerialPortFromUsbSetting
 
-class ConnectorUartSerial(ConnectorUartBase):
+class SerialTty(SerialBase):
     """
     """
+
+    # Hold instances mutex
+    __MUTEX = asyncio.Lock()
 
     # Hold instances mutex
     __MUTEX = asyncio.Lock()
@@ -19,7 +22,7 @@ class ConnectorUartSerial(ConnectorUartBase):
     __INSTANCES = {}
 
     # Local logs
-    log = driver_logger("ConnectorUartSerial")
+    log = driver_logger("SerialTty")
 
     ###########################################################################
     ###########################################################################
@@ -35,19 +38,19 @@ class ConnectorUartSerial(ConnectorUartBase):
     
         * *serial_baudrate* (``int``) --
             serial baudrate
-            
+    
         * *usb_vendor* (``str``) --
             ID_VENDOR_ID
         * *usb_model* (``str``) --
             ID_MODEL_ID
         """
         # Log
-        ConnectorUartSerial.log.debug(f"Get connector for {kwargs}")
+        SerialTty.log.debug(f"Get connector for {kwargs}")
 
-        async with ConnectorUartSerial.__MUTEX:
+        async with SerialTty.__MUTEX:
 
             # Log
-            ConnectorUartSerial.log.debug(f"Lock acquired !")
+            SerialTty.log.debug(f"Lock acquired !")
 
 
             # Get the serial port name
@@ -63,20 +66,22 @@ class ConnectorUartSerial(ConnectorUartBase):
                 raise Exception("no way to identify the serial port")
 
             # Create the new connector
-            if not (serial_port_name in ConnectorUartSerial.__INSTANCES):
-                ConnectorUartSerial.__INSTANCES[serial_port_name] = None
+            if not (serial_port_name in SerialTty.__INSTANCES):
+                SerialTty.__INSTANCES[serial_port_name] = None
                 try:
-                    new_instance = ConnectorUartSerial(loop,**kwargs)
+                    new_instance = SerialTty(loop,**kwargs)
                     await new_instance.connect()
                     
-                    ConnectorUartSerial.__INSTANCES[serial_port_name] = new_instance
-                    ConnectorUartSerial.log.info("connector created")
+                    SerialTty.__INSTANCES[serial_port_name] = new_instance
+                    SerialTty.log.info("connector created")
                 except Exception as e:
-                    ConnectorUartSerial.__INSTANCES.pop(serial_port_name)
+                    SerialTty.__INSTANCES.pop(serial_port_name)
                     raise Exception('Error during initialization').with_traceback(e.__traceback__)
+            else:
+                SerialTty.log.info("connector already created, use existing instance")
 
             # Return the previously created
-            return ConnectorUartSerial.__INSTANCES[serial_port_name]
+            return SerialTty.__INSTANCES[serial_port_name]
 
     ###########################################################################
     ###########################################################################
@@ -84,17 +89,26 @@ class ConnectorUartSerial(ConnectorUartBase):
     def __init__(self, loop,**kwargs):
         """Constructor
         """
+
         # Init local mutex
         self._mutex = asyncio.Lock()
+
+        # Init command mutex
+        self._cmd_mutex = asyncio.Lock()
+
+
+        # Init time lock
+        self._time_lock_s = None
+        
         
         key = kwargs["serial_port_name"]
         
         self.loop = loop
         
-        if not (key in ConnectorUartSerial.__INSTANCES):
+        if not (key in SerialTty.__INSTANCES):
             raise Exception("You need to pass through Get method to create an instance")
         else:
-            self.log = logging.getLogger(key)
+            self.log = driver_logger(key)
             self.log.info(f"attached to the UART Serial Connector")
 
             
@@ -114,69 +128,69 @@ class ConnectorUartSerial(ConnectorUartBase):
         
 
 
-    ###########################################################################
-    ###########################################################################
+
+    # =============================================================================
+    # OVERRIDE FROM SERIAL_BASE
 
 
-    async def read_uart(self):
+    async def beg_cmd(self):
+        await self._cmd_mutex.acquire()
+
+    async def end_cmd(self):
+        self._cmd_mutex.release()
+
+
+    # ---
+
+    async def read_data(self, n_bytes = None):
         """Read from UART using asynchronous mode
         """
         
         async with self._mutex:
-            #await asyncio.sleep(1)
+
             try:
-                data = await asyncio.wait_for(self.reader.readuntil(b'\n'), timeout=1.0)
-                decoded_data = data.decode('utf-8').strip()
-                return decoded_data
+                if n_bytes is None:
+                    data = await asyncio.wait_for(self.reader.readline(), timeout=1.0)
+                else:
+                    data = await asyncio.wait_for(self.reader.readexactly(n_bytes), timeout=1.0)
+                    print(f"Read data: {data}, Type: {type(data)}")  # Debugging print
+                return data
             
             except asyncio.TimeoutError as e: 
                 raise Exception('Error during reading uart').with_traceback(e.__traceback__)
 
-            
-                
-    ###########################################################################
-    ###########################################################################
+    # ---
 
-    async def write_uart(self,message):
+    async def write_data(self, message, time_lock_s=None):
         """write to UART using asynchronous mode
         """
         async with self._mutex:
-            #await asyncio.sleep(1)
+            
             try:
+                # Manage time lock by waiting for the remaining duration
+                if self._time_lock_s:
+                    elapsed = time.time() - self._time_lock_s["t0"]
+                    if elapsed < self._time_lock_s["duration"]:
+
+                        wait_time = self._time_lock_s["duration"] - elapsed
+                        self.log.debug(f"wait lock {wait_time}")
+                        await asyncio.sleep(wait_time)
+                    self._time_lock_s = None
+
+                # Start sending the message
                 self.writer.write(message.encode())
+
+                # Wait for the emittion completion
                 await self.writer.drain()
+
+                # Set the time lock if requested by the user
+                if time_lock_s != None:
+                    self._time_lock_s = {
+                        "duration": time_lock_s,
+                        "t0": time.time()
+                    }
+
             except Exception as e:
                 raise Exception('Error during writing to uart').with_traceback(e.__traceback__)
 
 
-    ###########################################################################
-    # SERIAL SYNCHRONOUS
-    ###########################################################################
-
-
-
-    # async def connect(self):
-    #         """Start the serial connection
-    #         """
-
-    #         self.uart = serial.Serial(self.port_name, baudrate=self.baudrate, timeout=1)
-
-
-
-
-    # async def read_uart(self):
-    #     async with self._mutex:
-    
-    #         data = self.uart.readline()[:-2]
-
-    #         decoded_data = data.decode('utf-8')
-    #         if decoded_data :
-    #             return decoded_data
-    
-
-
-    # async def write_uart(self,message):
-    #     async with self._mutex:
-    #         print(message.encode())
-           
-    #         self.uart.write(message.encode())
