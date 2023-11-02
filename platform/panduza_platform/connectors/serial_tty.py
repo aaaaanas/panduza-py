@@ -161,6 +161,28 @@ class SerialTty(SerialBase):
 
     # ---
 
+    async def __accumulate_date(self, data):
+        while True:
+            data.append(await self.reader.readexactly(1))
+
+    # ---
+
+    async def read_data_during(self, duration_s = 0.5):
+        """
+        """
+        async with self._mutex:
+            data = []
+            try:
+                await asyncio.wait_for(self.__accumulate_date(data), timeout=duration_s)
+            except asyncio.TimeoutError as e: 
+                pass
+                # raise Exception('Error during reading uart').with_traceback(e.__traceback__)
+
+            # Convert bytearray into bytes
+            return b''.join(data)
+
+    # ---
+
     async def write_data(self, message, time_lock_s=None):
         """write to UART using asynchronous mode
         """
