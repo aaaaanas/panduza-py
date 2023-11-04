@@ -46,22 +46,20 @@ class DrvKoradKa3005pBPC(MetaDriverBpc):
 
     async def _PZA_DRV_BPC_read_enable_value(self):
         # await asyncio.sleep(1)
-        await self.serial_connector.write_data("STATUS?", time_lock_s=COMMAND_TIME_LOCK)
-        status = await self.serial_connector.read_data(n_bytes=1)
+        status = await self.serial_connector.write_and_read("STATUS?", time_lock_s=COMMAND_TIME_LOCK)
         return bool(status[0] & (1 << 6))
 
     async def _PZA_DRV_BPC_write_enable_value(self, v):
-        await self.serial_connector.write_data("OUT{}".format(int(v)), time_lock_s=COMMAND_TIME_LOCK)
+        await self.serial_connector.write("OUT{}".format(int(v)), time_lock_s=COMMAND_TIME_LOCK)
 
     # ---
 
     async def _PZA_DRV_BPC_read_voltage_value(self):
-        await self.serial_connector.write_data("VSET1?", time_lock_s=COMMAND_TIME_LOCK)
-        voltage = await self.serial_connector.read_data(n_bytes=5)
+        voltage = await self.serial_connector.write_and_read("VSET1?", time_lock_s=COMMAND_TIME_LOCK)
         return float(voltage)
 
     async def _PZA_DRV_BPC_write_voltage_value(self, v):
-        await self.serial_connector.write_data("VSET1:{:05.2f}".format(v), time_lock_s=COMMAND_TIME_LOCK)
+        await self.serial_connector.write("VSET1:{:05.2f}".format(v), time_lock_s=COMMAND_TIME_LOCK)
 
     async def _PZA_DRV_BPC_voltage_value_min_max(self):
         return VOLTAGE_BOUNDS
@@ -72,12 +70,11 @@ class DrvKoradKa3005pBPC(MetaDriverBpc):
     # ---
 
     async def _PZA_DRV_BPC_read_current_value(self):
-        await self.serial_connector.write_data("ISET1?", time_lock_s=COMMAND_TIME_LOCK)
-        current = await self.serial_connector.read_data(n_bytes=6)
+        current = await self.serial_connector.write_and_read("ISET1?", time_lock_s=COMMAND_TIME_LOCK)
         return float(current[0:5])
 
     async def _PZA_DRV_BPC_write_current_value(self, v):
-        await self.serial_connector.write_data("ISET1:{:05.3f}".format(v), time_lock_s=COMMAND_TIME_LOCK)
+        await self.serial_connector.write("ISET1:{:05.3f}".format(v), time_lock_s=COMMAND_TIME_LOCK)
         
     async def _PZA_DRV_BPC_current_value_min_max(self):
         return CURRENT_BOUNDS

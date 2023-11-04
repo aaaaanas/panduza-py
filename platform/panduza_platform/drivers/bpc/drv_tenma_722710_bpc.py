@@ -67,11 +67,7 @@ class DrvTenma722710Bpc(MetaDriverBpc):
     async def _PZA_DRV_BPC_read_enable_value(self):
         # Send "STATUS?" to get back the output state
 
-        await self.serial_connector.beg_cmd()
-        await self.serial_connector.write_data(f"STATUS?\n", time_lock_s=COMMAND_TIME_LOCK)
-        # statusBytes = await self.serial_connector.read_data()
-        statusBytes = await self.serial_connector.read_data_during()
-        await self.serial_connector.end_cmd()
+        statusBytes = await self.serial_connector.write_and_read(f"OUT?\n", time_lock_s=COMMAND_TIME_LOCK)
 
         # self.log.debug(f"*******************{statusBytes}")
         self.log.debug(f"{statusBytes.strip()}")
@@ -89,21 +85,20 @@ class DrvTenma722710Bpc(MetaDriverBpc):
     async def _PZA_DRV_BPC_write_enable_value(self, v):
     	# Send "OUT{v}" to enable output
         int16_value = STATE_VALUE_ENUM[v]
-        await self.serial_connector.write_data(f"OUT{int16_value}\n", time_lock_s=COMMAND_TIME_LOCK)
+        await self.serial_connector.write(f"OUT{int16_value}\n", time_lock_s=COMMAND_TIME_LOCK)
 
     # VOLTAGE #
 
     async def _PZA_DRV_BPC_read_voltage_value(self):
         # Send "VSET1?" to get the voltage value
-        await self.serial_connector.write_data(f"VSET{self.channel}?\n", time_lock_s=COMMAND_TIME_LOCK)
-        voltage = await self.serial_connector.read_data()
+        voltage = await self.serial_connector.write_and_read(f"VSET{self.channel}?\n", time_lock_s=COMMAND_TIME_LOCK)
         return float(voltage)
 
     # ---
 
     async def _PZA_DRV_BPC_write_voltage_value(self, v):
         # Send "VSET1:{v}" to set the voltage value
-        await self.serial_connector.write_data(f"VSET{self.channel}:{v}\n", time_lock_s=COMMAND_TIME_LOCK)
+        await self.serial_connector.write(f"VSET{self.channel}:{v}\n", time_lock_s=COMMAND_TIME_LOCK)
 
     # ---
 
@@ -119,15 +114,14 @@ class DrvTenma722710Bpc(MetaDriverBpc):
 
     async def _PZA_DRV_BPC_read_current_value(self):
         # Send "ISET1?" to get the Current value
-        await self.serial_connector.write_data(f"ISET{self.channel}?\n", time_lock_s=COMMAND_TIME_LOCK)
-        current = await self.serial_connector.read_data()
+        current = await self.serial_connector.write_and_read(f"ISET{self.channel}?\n", time_lock_s=COMMAND_TIME_LOCK)
         return float(current)
 
     # ---
 
     async def _PZA_DRV_BPC_write_current_value(self, v):
         # Send "ISET1:{v}" to set the Current value
-        await self.serial_connector.write_data(f"ISET{self.channel}:{v}\n", time_lock_s=COMMAND_TIME_LOCK)
+        await self.serial_connector.write(f"ISET{self.channel}:{v}\n", time_lock_s=COMMAND_TIME_LOCK)
 
     # ---
 

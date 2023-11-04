@@ -8,7 +8,7 @@ from log.driver import driver_logger
 
 from .udev_tty import SerialPortFromUsbSetting
 
-class SerialTty(SerialBase):
+class SerialTty():
     """
     """
 
@@ -93,13 +93,8 @@ class SerialTty(SerialBase):
         # Init local mutex
         self._mutex = asyncio.Lock()
 
-        # Init command mutex
-        self._cmd_mutex = asyncio.Lock()
-
-
         # Init time lock
         self._time_lock_s = None
-        
         
         key = kwargs["serial_port_name"]
         
@@ -132,87 +127,50 @@ class SerialTty(SerialBase):
     # =============================================================================
     # OVERRIDE FROM SERIAL_BASE
 
-
-    async def beg_cmd(self):
-        await self._cmd_mutex.acquire()
-
-    async def end_cmd(self):
-        self._cmd_mutex.release()
-
-
-    # ---
-
-    async def read_data(self, n_bytes = None):
-        """Read from UART using asynchronous mode
-        """
-        
-        async with self._mutex:
-
-            try:
-                if n_bytes is None:
-                    data = await asyncio.wait_for(self.reader.readline(), timeout=1.0)
-                else:
-                    data = await asyncio.wait_for(self.reader.readexactly(n_bytes), timeout=1.0)
-                    print(f"Read data: {data}, Type: {type(data)}")  # Debugging print
-                return data
-            
-            except asyncio.TimeoutError as e: 
-                raise Exception('Error during reading uart').with_traceback(e.__traceback__)
-
-    # ---
-
-    async def __accumulate_date(self, data):
-        while True:
-            data.append(await self.reader.readexactly(1))
-
-    # ---
-
-    async def read_data_during(self, duration_s = 0.5):
-        """
-        """
-        async with self._mutex:
-            data = []
-            try:
-                await asyncio.wait_for(self.__accumulate_date(data), timeout=duration_s)
-            except asyncio.TimeoutError as e: 
-                pass
-                # raise Exception('Error during reading uart').with_traceback(e.__traceback__)
-
-            # Convert bytearray into bytes
-            return b''.join(data)
-
-    # ---
-
-    async def write_data(self, message, time_lock_s=None):
+    async def _write(self, message, time_lock_s=None):
         """write to UART using asynchronous mode
         """
-        async with self._mutex:
+        try:
+            # Manage time lock by waiting for the remaining duration
+            if self._time_lock_s:
+                elapsed = time.time() - self._time_lock_s["t0"]
+                if elapsed < self._time_lock_s["duration"]:
+                    wait_time = self._time_lock_s["duration"] - elapsed
+                    self.log.debug(f"wait lock {wait_time}")
+                    await asyncio.sleep(wait_time)
+                self._time_lock_s = None
+            # Start sending the message
+            self.writer.write(message.encode())
+            # Wait for the emittion completion
+            await self.writer.drain()
+            # Set the time lock if requested by the user
+            if time_lock_s != None:
+                self._time_lock_s = {
+                    "duration": time_lock_s,
+                    "t0": time.time()
+                }
+        except Exception as e:
+            raise Exception('Error during writing to uart').with_traceback(e.__traceback__)
             
-            try:
-                # Manage time lock by waiting for the remaining duration
-                if self._time_lock_s:
-                    elapsed = time.time() - self._time_lock_s["t0"]
-                    if elapsed < self._time_lock_s["duration"]:
+    async def _read(self, n_bytes_to_read):
+        try:
+            response = await asyncio.wait_for(self.reader.read(n_bytes_to_read), timeout=1)
+            return response
+        except Exception as e:
+            raise Exception('Error during reading from uart').with_traceback(e.__traceback__)
+        
+        
+    
+    async def write(self, message, time_lock_s=None):
+        async with self._mutex:
+            await self._write(message, time_lock_s)
 
-                        wait_time = self._time_lock_s["duration"] - elapsed
-                        self.log.debug(f"wait lock {wait_time}")
-                        await asyncio.sleep(wait_time)
-                    self._time_lock_s = None
-
-                # Start sending the message
-                self.writer.write(message.encode())
-
-                # Wait for the emittion completion
-                await self.writer.drain()
-
-                # Set the time lock if requested by the user
-                if time_lock_s != None:
-                    self._time_lock_s = {
-                        "duration": time_lock_s,
-                        "t0": time.time()
-                    }
-
-            except Exception as e:
-                raise Exception('Error during writing to uart').with_traceback(e.__traceback__)
-
-
+    async def read(self, n_bytes_to_read=10):
+        async with self._mutex:
+            return await self._read(n_bytes_to_read)
+    
+    async def write_and_read(self, message, time_lock_s=0, n_bytes_to_read=10):
+        async with self._mutex:
+            await self._write(message, time_lock_s)
+            await asyncio.sleep(time_lock_s)
+            return await self._read(n_bytes_to_read)
