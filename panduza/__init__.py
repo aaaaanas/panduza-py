@@ -7,3 +7,8 @@ from .interfaces import Dio
 from .interfaces import Bpc
 from .interfaces import Ammeter
 from .interfaces import Platform
+
+from .interfaces import Blc
+from .interfaces import Powermeter
+from .interfaces import Thermometer
+

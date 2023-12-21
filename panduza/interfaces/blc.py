@@ -1,0 +1,73 @@
+from dataclasses import dataclass
+from ..core import Interface, Attribute, RoField, RwField
+
+@dataclass
+class Blc(Interface):
+    """Interface to manage Bench Laser Controller
+    """
+
+    interface:Interface = None
+
+    def __post_init__(self):
+
+        if self.alias:
+            pass
+        elif self.interface:
+            # Build from an other interface
+            self.alias = self.interface.alias
+            self.addr = self.interface.addr
+            self.port = self.interface.port
+            self.topic = self.interface.topic
+            self.client = self.interface.client
+
+        super().__post_init__()
+
+        # === MODE ===
+        self.add_attribute(
+            Attribute( name_ = "mode" )
+        ).add_field(
+            RwField( name_ = "constant_power" )
+        ).add_field(
+            RwField( name_ = "constant_current" )
+        )
+
+        # === ENABLE ===
+        self.add_attribute(
+            Attribute( name_ = "enable" )
+        ).add_field(
+            RwField( name_ = "value" )
+        )
+
+        # === POWER ===
+        self.add_attribute(
+            Attribute( name_ = "power" )
+        ).add_field(
+            RwField( name_ = "value" )
+        ).add_field(
+            RoField( name_ = "min" )
+        ).add_field(
+            RoField( name_ = "max" )
+        ).add_field(
+            RoField( name_ = "decimals" )
+        )
+
+        # === CURRENT ===
+        self.add_attribute(
+            Attribute( name_ = "current" )
+        ).add_field(
+            RwField( name_ = "value" )
+        ).add_field(
+            RoField( name_ = "min" )
+        ).add_field(
+            RoField( name_ = "max" )
+        ).add_field(
+            RoField( name_ = "decimals" )
+        )
+
+        if self.ensure:
+            self.ensure_init()
+
+
+    def toggle(self):
+        pass
+
