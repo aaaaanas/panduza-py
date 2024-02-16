@@ -26,9 +26,7 @@ class Blc(Interface):
         self.add_attribute(
             Attribute( name_ = "mode" )
         ).add_field(
-            RwField( name_ = "constant_power" )
-        ).add_field(
-            RwField( name_ = "constant_current" )
+            RwField( name_ = "value" )
         )
 
         # === ENABLE ===
@@ -70,4 +68,22 @@ class Blc(Interface):
 
     def toggle(self):
         pass
+
+
+    def set_mode_constant_power(self):
+        self.mode.value.set("constant_power")
+
+    def set_mode_constant_current(self):
+        self.mode.value.set("constant_current")
+
+
+    def set_power_goal_point(self, value):
+        self.power.value.set(value)
+
+    def get_power_min_value(self):
+        return self.power.min.get()
+        
+    def get_power_max_value(self):
+        return self.power.max.get()
+
 
