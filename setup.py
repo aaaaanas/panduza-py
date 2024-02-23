@@ -13,7 +13,7 @@ setup(
 
         install_requires=[
             'setuptools',
-            'paho-mqtt',
+            'paho-mqtt==1.6.1',
             'python-magic',
             'colorama',
             'Pygal',
